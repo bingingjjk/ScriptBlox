@@ -6,11 +6,11 @@
 driving-empire | working
 beanzz | working
 mm2 | working
-blade-ball | working
+blade-ball | down
 mvsd | working
 drive-world | working
-fake-verifi | working
-command-an-armmy | working
-racket-rival | working
-autorob-for-driving-empire | working
+fake-verifi | down
+command-an-armmy | down
+racket-rival | down
+autorob-for-driving-empire | down
 
