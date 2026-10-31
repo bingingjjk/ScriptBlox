@@ -1,0 +1,15 @@
+# ScriptBlox status board. One script per line, in this format:
+#   script-name | working
+# Use one of these words after the bar:  working   down   updating
+# Lines that start with # are ignored. The order here is the order on the page.
+
+driving-empire | working
+beanzz | working
+mm2 | working
+blade-ball | working
+mvsd | working
+drive-world | working
+fake-verifi | working
+command-an-armmy | working
+racket-rival | working
+autorob-for-driving-empire | working

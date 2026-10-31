@@ -343,6 +343,11 @@
   @keyframes ping { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.6); opacity: 0; } }
   .count b { color: var(--ok); font-weight: 700; font-variant-numeric: tabular-nums; }
 
+  /* Updating state (set with "| updating" in status.txt) */
+  .upd .dot { background: var(--sun); box-shadow: 0 0 0 4px rgba(255,211,126,.18); }
+  .upd .dot::after { border-color: var(--sun); }
+  .upd .state { color: var(--sun); }
+
   /* Card hover glow and cursor spotlight */
   .panel, .perk, .role, .step, .staff { position: relative; transition: transform .35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .35s ease, border-color .35s ease, background-color .35s ease; }
   .spot:hover { background-image: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 143, 43, 0.14), transparent 62%); }
@@ -444,7 +449,7 @@
 
     <section id="drops" aria-labelledby="drops-title">
       <p class="eyebrow reveal">Script status</p>
-      <h2 class="reveal" id="drops-title">Every script, working today</h2>
+      <h2 class="reveal" id="drops-title">What works right now</h2>
       <p class="lede reveal">New scripts are posted in <code class="ch">#script</code> every week. Each one has its own status channel, and this is the board right now.</p>
 
       <div class="board">
@@ -568,7 +573,7 @@
         try {
           var where = btn.closest("header") ? "top" : (btn.closest(".hero") ? "hero" : "bottom");
           if (window.goatcounter && window.goatcounter.count) {
-            window.goatcounter.count({ path: "copy-link-" + where, title: "Copied Discord link (" + where + ")", event: true });
+            window.goatcounter.count({ path: "app-copy-" + where, title: "Copied Discord link (" + where + ")", event: true });
           }
         } catch (e) {}
         btn.style.minWidth = btn.getBoundingClientRect().width + "px";
@@ -784,13 +789,54 @@
     /* Status counter */
     var countEl = document.getElementById('status-count');
     var totalEl = document.getElementById('status-total');
-    var statusRows = document.querySelectorAll('.status li');
-    var okRows = document.querySelectorAll('.status li:not(.down)');
-    if (totalEl) totalEl.textContent = statusRows.length;
-    if (countEl) countEl.textContent = okRows.length;
+    var okCount = 0;
+    function recount() {
+      var rows = document.querySelectorAll('.status li');
+      okCount = document.querySelectorAll('.status li:not(.down):not(.upd)').length;
+      if (totalEl) totalEl.textContent = rows.length;
+      if (countEl) countEl.textContent = okCount;
+    }
+    recount();
+
+    /* Status board comes from status.txt (one line per script: name | working, down or updating).
+       The list written in the page is the fallback if the file cannot be loaded. */
+    function loadStatus() {
+      var list = document.querySelector('.status');
+      if (!list || !window.fetch) return;
+      fetch('status.txt', { cache: 'no-store' }).then(function (r) {
+        if (!r.ok) throw new Error('no file');
+        return r.text();
+      }).then(function (txt) {
+        var items = [];
+        txt.split(/\r?\n/).forEach(function (line) {
+          line = line.trim();
+          if (!line || line.charAt(0) === '#' || items.length >= 60) return;
+          var parts = line.split('|');
+          var name = parts[0].trim();
+          if (!name) return;
+          var st = (parts[1] || 'working').trim().toLowerCase();
+          items.push({ name: name, st: st === 'down' ? 'down' : (st === 'updating' ? 'upd' : 'ok') });
+        });
+        if (!items.length) return;
+        while (list.firstChild) list.removeChild(list.firstChild);
+        items.forEach(function (it, k) {
+          var li = document.createElement('li');
+          if (it.st !== 'ok') li.className = it.st;
+          li.style.setProperty('--i', k);
+          var dot = document.createElement('span'); dot.className = 'dot'; dot.style.setProperty('--i', k);
+          var nm = document.createElement('span'); nm.className = 'name'; nm.textContent = it.name;
+          var sp = document.createElement('span'); sp.className = 'state';
+          sp.textContent = it.st === 'down' ? 'Down' : (it.st === 'upd' ? 'Updating' : 'Working');
+          li.appendChild(dot); li.appendChild(nm); li.appendChild(sp);
+          list.appendChild(li);
+        });
+        recount();
+      }).catch(function () {});
+    }
+    loadStatus();
     function countUp() {
       if (!countEl || reduce) return;
-      var to = okRows.length, t0 = null;
+      var to = okCount, t0 = null;
       countEl.textContent = '0';
       function step(t) {
         if (!t0) t0 = t;
@@ -838,13 +884,13 @@
       if (btn && !standalone) btn.hidden = false;
     });
     if (btn) btn.addEventListener("click", function () {
-      count("app-install-click", "Tapped Install the app");
+      count("install-tap", "Tapped Install");
       if (!deferred) return;
       deferred.prompt();
       deferred.userChoice.then(function () { deferred = null; btn.hidden = true; });
     });
-    window.addEventListener("appinstalled", function () { count("app-installed", "App installed"); if (btn) btn.hidden = true; });
-    if (standalone) count("app-opened", "Opened from the app");
+    window.addEventListener("appinstalled", function () { count("install-done", "Installed"); if (btn) btn.hidden = true; });
+    if (standalone) count("install-open", "Opened from home screen");
     var swOk = false; try { swOk = "serviceWorker" in navigator; } catch (e) {}
     if (swOk) {
       window.addEventListener("load", function () { try { navigator.serviceWorker.register("./sw.js").catch(function () {}); } catch (e) {} });
